@@ -62,41 +62,50 @@ async def predict_crop(data: FarmData):
     response = client.models.generate_content(model=MODEL_NAME, contents=prompt)
     
     return {"crop": crop, "price": price, "advice": response.text}
-
+    
 @app.post("/chat")
 async def chat_with_agri_bot(request: ChatRequest):
     uid = request.user_id
     msg = request.message.strip().lower()
 
-    # 1. Initialize session if it's the first time
+    # Handle Reset/Restart
+    if msg == "reset" or msg == "init":
+        if uid in user_sessions:
+            del user_sessions[uid]
+        user_sessions[uid] = {"step": "lang_selection", "lang": None}
+        return {"reply": "Welcome back! Please select your language: \n1. English \n2. Hindi (हिंदी)"}
+
     if uid not in user_sessions:
         user_sessions[uid] = {"step": "lang_selection", "lang": None}
-        return {"reply": "Welcome! Please select your language: \n1. English \n2. Hindi (हिंदी)"}
+        return {"reply": "Please select your language: 1. English or 2. Hindi."}
 
     session = user_sessions[uid]
 
-    # 2. Handle Language Selection Step
+    # Handle Language Selection
     if session["step"] == "lang_selection":
         if "1" in msg or "english" in msg:
             session.update({"step": "chatting", "lang": "English"})
-            return {"reply": "Language set to English. How can I help you today?"}
-        elif "2" in msg or "hindi" in msg or "हिंदी" in msg:
+            return {"reply": "English set. I can help with soil, crops, weather, and Mandi prices. What is your question?"}
+        elif "2" in msg or "hindi" in msg:
             session.update({"step": "chatting", "lang": "Hindi"})
-            return {"reply": "भाषा हिंदी सेट की गई है। मैं आपकी कैसे मदद कर सकता हूँ?"}
-        else:
-            return {"reply": "Invalid choice. Please type 1 for English or 2 for Hindi."}
+            return {"reply": "हिंदी सेट की गई है। मैं मिट्टी, फसल और मंडी भाव में मदद कर सकता हूँ। आपका प्रश्न क्या है?"}
+        return {"reply": "Choose 1 or 2."}
 
-    # 3. Regular Multilingual Chatting Step
+    # Strict Contextual Chatting
     try:
-        current_lang = session["lang"]
-        prompt = (
-            f"You are the AgroSmart Virtual Agronomist. Respond ONLY in {current_lang}. "
-            f"Question: {request.message}"
+        lang = session["lang"]
+        system_instruction = (
+            f"You are the AgroSmart Virtual Assistant. Respond strictly in {lang}. "
+            "IMPORTANT: Only answer questions related to agriculture, soil (NPK, pH), "
+            "weather, and crop market prices as featured on the AgroSmart website. "
+            "If a user asks about unrelated topics (movies, sports, etc.), politely "
+            "decline and ask them to stick to farming queries."
         )
         
-        response = client.models.generate_content(model=MODEL_NAME, contents=prompt)
+        response = client.models.generate_content(
+            model="gemini-1.5-flash", 
+            contents=f"{system_instruction}\nUser: {request.message}"
+        )
         return {"reply": response.text}
-    
     except Exception as e:
-        print(f"Chat Error: {e}")
-        return {"reply": "I am processing your request. Please try again." if session["lang"] == "English" else "मैं आपके अनुरोध पर काम कर रहा हूँ। कृपया फिर से प्रयास करें।"}
+        return {"reply": "Error connecting to AI. Please try again."}
