@@ -73,12 +73,21 @@ async def predict_crop(data: FarmData):
 
 @app.post("/chat")
 async def chat_with_agri_bot(request: ChatRequest):
-    """General AI Agronomist Chatbot endpoint"""
+    """Multilingual AI Agronomist Chatbot endpoint"""
     try:
-        prompt = f"You are the AgroSmart Virtual Agronomist. Answer this farmer's question professionally and concisely: {request.message}"
-        response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+        prompt = (
+            "You are the AgroSmart Virtual Agronomist. "
+            "Answer the farmer's question professionally and concisely. "
+            "If the user asks in Hindi, respond in Hindi. If in English, respond in English. "
+            f"Question: {request.message}"
+        )
+        
+        response = client.models.generate_content(
+            model="gemini-1.5-flash", 
+            contents=prompt
+        )
         
         return {"reply": response.text}
     except Exception as e:
         print(f"Chat Error: {e}")
-        return {"reply": "I'm currently resting. Please try again in a moment!"}
+        return {"reply": "I am processing your request. Please try again in a few seconds."}
