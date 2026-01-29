@@ -59,9 +59,9 @@ async def predict_crop(data: FarmData):
     price = get_mandi_price(crop, GOV_API_KEY)
     
     prompt = f"Farmer in {data.city}, Crop: {crop}, Temp: {weather['temp']}C. Give a 3-point strategy."
-    response = client.models.generate_content(model=MODEL_NAME, contents=prompt)
+    response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
     
-    return {"crop": crop, "price": price, "advice": response.text}
+    return {"crop": crop, "price": price, "advice": .text}
     
 @app.post("/chat")
 async def chat_with_agri_bot(request: ChatRequest):
