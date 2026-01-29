@@ -197,98 +197,126 @@
         </div>
     </div>
 
-    <script>
-        const RENDER_BASE_URL = "https://crop-advisor-q3mj.onrender.com";
+ <script>
+    const RENDER_BASE_URL = "https://crop-advisor-q3mj.onrender.com";
 
-        // Navigation
-        function showPage(pageId) {
-            document.querySelectorAll('main').forEach(p => {
-                p.classList.remove('active');
-                p.classList.add('section-hidden');
-            });
-            const target = document.getElementById(pageId + '-page');
-            target.classList.remove('section-hidden');
-            target.classList.add('active');
-            window.scrollTo(0,0);
-        }
+    // 1. Session Management: Generate a unique ID to remember language choice
+    let userId = localStorage.getItem('agro_user_id');
+    if (!userId) {
+        userId = 'user_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('agro_user_id', userId);
+    }
 
-        // Dashboard Prediction
-        async function runInference() {
-            const mainBtn = document.getElementById('mainBtn');
-            const loaderUI = document.getElementById('loaderUI');
-            const resultsUI = document.getElementById('resultsUI');
-
-            const payload = {
-                n: parseInt(document.getElementById('n').value) || 0,
-                p: parseInt(document.getElementById('p').value) || 0,
-                k: parseInt(document.getElementById('k').value) || 0,
-                ph: parseFloat(document.getElementById('ph').value) || 0,
-                rainfall: parseFloat(document.getElementById('rainfall').value) || 0,
-                city: document.getElementById('city').value
-            };
-
-            mainBtn.disabled = true;
-            resultsUI.classList.add('hidden');
-            loaderUI.classList.remove('hidden');
-
-            try {
-                const response = await fetch(`${RENDER_BASE_URL}/predict`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await response.json();
-                document.getElementById('resCrop').innerText = data.crop.toUpperCase();
-                document.getElementById('resPrice').innerText = "₹ " + data.price;
-                document.getElementById('resAdvice').innerHTML = data.advice.replace(/\n/g, '<br>');
-                resultsUI.classList.remove('hidden');
-            } catch (error) {
-                alert("The AI brain is waking up on Render. Please try again in 30 seconds!");
-            } finally {
-                loaderUI.classList.add('hidden');
-                mainBtn.disabled = false;
-            }
-        }
-
-        // Chatbot Logic
-        function toggleChat() {
-            const win = document.getElementById('chat-window');
-            if (win.classList.contains('hidden')) {
-                win.classList.replace('hidden', 'flex');
-            } else {
-                win.classList.replace('flex', 'hidden');
-            }
-        }
-
-        async function sendMessage() {
-            const input = document.getElementById('user-input');
-            const container = document.getElementById('chat-messages');
-            const msg = input.value.trim();
-            if(!msg) return;
-            
-            // Add user message to UI
-            container.innerHTML += `<div class="bg-slate-200 p-3 rounded-2xl rounded-tr-none ml-8 text-slate-800">${msg}</div>`;
-            input.value = "";
-            container.scrollTop = container.scrollTop = container.scrollHeight;
-            
-            try {
-                const response = await fetch(`${RENDER_BASE_URL}/chat`, {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({ message: msg })
-                });
-                const data = await response.json();
-                container.innerHTML += `<div class="bg-emerald-100 p-3 rounded-2xl rounded-tl-none mr-8 text-slate-800">${data.reply}</div>`;
-            } catch (e) {
-                container.innerHTML += `<div class="text-red-500 text-xs text-center">Backend is waking up... try again in 10s.</div>`;
-            }
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // Enter key for Chat
-        document.getElementById('user-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
+    // Navigation Logic
+    function showPage(pageId) {
+        document.querySelectorAll('main').forEach(p => {
+            p.classList.remove('active');
+            p.classList.add('section-hidden');
         });
-    </script>
+        const target = document.getElementById(pageId + '-page');
+        target.classList.remove('section-hidden');
+        target.classList.add('active');
+        window.scrollTo(0,0);
+    }
+
+    // Dashboard Prediction Logic
+    async function runInference() {
+        const mainBtn = document.getElementById('mainBtn');
+        const loaderUI = document.getElementById('loaderUI');
+        const resultsUI = document.getElementById('resultsUI');
+
+        const payload = {
+            n: parseInt(document.getElementById('n').value) || 0,
+            p: parseInt(document.getElementById('p').value) || 0,
+            k: parseInt(document.getElementById('k').value) || 0,
+            ph: parseFloat(document.getElementById('ph').value) || 0,
+            rainfall: parseFloat(document.getElementById('rainfall').value) || 0,
+            city: document.getElementById('city').value
+        };
+
+        mainBtn.disabled = true;
+        resultsUI.classList.add('hidden');
+        loaderUI.classList.remove('hidden');
+
+        try {
+            const response = await fetch(`${RENDER_BASE_URL}/predict`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            document.getElementById('resCrop').innerText = data.crop.toUpperCase();
+            document.getElementById('resPrice').innerText = "₹ " + data.price;
+            document.getElementById('resAdvice').innerHTML = data.advice.replace(/\n/g, '<br>');
+            resultsUI.classList.remove('hidden');
+        } catch (error) {
+            alert("The AI brain is waking up on Render. Please try again in 30 seconds!");
+        } finally {
+            loaderUI.classList.add('hidden');
+            mainBtn.disabled = false;
+        }
+    }
+
+    // Chatbot Logic
+    function toggleChat() {
+        const win = document.getElementById('chat-window');
+        if (win.classList.contains('hidden')) {
+            win.classList.replace('hidden', 'flex');
+            // Trigger welcome message if chat is empty
+            const container = document.getElementById('chat-messages');
+            if (container.children.length <= 1) {
+                initChat();
+            }
+        } else {
+            win.classList.replace('flex', 'hidden');
+        }
+    }
+
+    // Initialize chat to trigger language selection on backend
+    async function initChat() {
+        const container = document.getElementById('chat-messages');
+        try {
+            const response = await fetch(`${RENDER_BASE_URL}/chat`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ message: "init", user_id: userId })
+            });
+            const data = await response.json();
+            container.innerHTML += `<div class="bg-emerald-100 p-3 rounded-2xl rounded-tl-none mr-8 text-slate-800">${data.reply}</div>`;
+        } catch (e) {
+            console.log("Waiting for backend...");
+        }
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('user-input');
+        const container = document.getElementById('chat-messages');
+        const msg = input.value.trim();
+        if(!msg) return;
+        
+        container.innerHTML += `<div class="bg-slate-200 p-3 rounded-2xl rounded-tr-none ml-8 text-slate-800">${msg}</div>`;
+        input.value = "";
+        container.scrollTop = container.scrollHeight;
+        
+        try {
+            const response = await fetch(`${RENDER_BASE_URL}/chat`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                // Now sending user_id to track the language session
+                body: JSON.stringify({ message: msg, user_id: userId })
+            });
+            const data = await response.json();
+            container.innerHTML += `<div class="bg-emerald-100 p-3 rounded-2xl rounded-tl-none mr-8 text-slate-800">${data.reply}</div>`;
+        } catch (e) {
+            container.innerHTML += `<div class="text-red-500 text-xs text-center">Backend is waking up... try again in 10s.</div>`;
+        }
+        container.scrollTop = container.scrollHeight;
+    }
+
+    document.getElementById('user-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+</script>
 </body>
 </html>
+
