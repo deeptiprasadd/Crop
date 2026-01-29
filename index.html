@@ -216,7 +216,7 @@
         }
 
         async function runInference() {
-            const API_URL = "https://crop-advisor-3mhp.onrender.com/predict";
+            const API_URL = "https://crop-advisor-q3mj.onrender.com/predict";
             const mainBtn = document.getElementById('mainBtn');
             const loaderUI = document.getElementById('loaderUI');
             const resultsUI = document.getElementById('resultsUI');
@@ -327,7 +327,7 @@
         
         // Fetch from your LIVE Render URL
         try {
-            const response = await fetch("https://crop-advisor-3mhp.onrender.com/chat", {
+            const response = await fetch("https://crop-advisor-q3mj.onrender.com/chat", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({ message: msg })
@@ -340,4 +340,5 @@
     }
 </script>
 </body>
+
 </html>
