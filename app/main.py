@@ -61,7 +61,7 @@ async def predict_crop(data: FarmData):
     prompt = f"Farmer in {data.city}, Crop: {crop}, Temp: {weather['temp']}C. Give a 3-point strategy."
     response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
     
-    return {"crop": crop, "price": price, "advice": .text}
+    return {"crop": crop, "price": price, "advice": response.text}
     
 @app.post("/chat")
 async def chat_with_agri_bot(request: ChatRequest):
