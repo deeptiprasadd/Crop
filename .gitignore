@@ -1,0 +1,16 @@
+# Sensitive Data (Never upload these)
+.env
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+
+# Large Model Files (if over 100MB)
+# crop_model.pkl
+
+# IDE files
+.vscode/
+.idea/
